@@ -1,4 +1,3 @@
-
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
@@ -63,30 +62,33 @@
                 var alcoholCnt = Number(document.getElementById("alcoholCnt").value) || 0;
                 var nonAlcoholCnt = Number(document.getElementById("nonAlcoholCnt").value) || 0;
 
-                // 실시간 화면 표시
+                // 실시간 화면 표시 (콤마 포맷팅 포함)
                 document.getElementById("totalAmtText").innerText = (foodAmt + alcoholAmt).toLocaleString();
-                document.getElementById("totalCntText").innerText = alcoholCnt + nonAlcoholCnt;
+                document.getElementById("totalCntText").innerText = (alcoholCnt + nonAlcoholCnt).toLocaleString();
             }
         </script>
     </head>
     <body>
         <h3>회비 정산 계산기</h3>
-        <input id="foodAmt" name="foodAmt" value="0" oninput="updateSummary()" /> 음식 금액<br/>
-        <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary()" /> 주류 금액<br/>
-        <hr/>
-        <input id="alcoholCnt" name="alcoholCnt" value="0" oninput="updateSummary()" /> 주류 인원 (음식+주류 대상)<br/>
-        <input id="nonAlcoholCnt" name="nonAlcoholCnt" value="0" oninput="updateSummary()" /> 비주류 인원 (음식만 대상)<br/>
-        <hr/>
         
-        <div style="background-color: #f0f7ff; padding: 10px; border-left: 4px solid #007bff; margin-bottom: 10px; display: inline-block; min-width: 250px;">
-            <strong>[실시간 합계]</strong><br/>
-            - 총 사용 금액: <span id="totalAmtText">0</span>원<br/>
-            - 총 인원: <span id="totalCntText">0</span>명
-        </div>
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 320px;">
+            <legend><strong>1. 금액 입력</strong></legend>
+            <input id="foodAmt" name="foodAmt" value="0" oninput="updateSummary()" /> 음식 금액<br/>
+            <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary()" /> 주류 금액<br/>
+            <div style="margin-top: 8px; color: #0056b3; font-weight: bold;">
+                💰 입력 금액 합계: <span id="totalAmtText">0</span>원
+            </div>
+        </fieldset>
+        <br/>
+
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 320px;">
+            <legend><strong>2. 인원 입력</strong></legend>
+            <input id="alcoholCnt" name="alcoholCnt" value="0" oninput="updateSummary()" /> 주류 인원 (음식+주류 대상)<br/>
+            <input id="nonAlcoholCnt" name="nonAlcoholCnt" value="0" oninput="updateSummary()" /> 비주류 인원 (음식만 대상)<br/>
+            <div style="margin-top: 8px; color: #28a745; font-weight: bold;">
+                👥 총 인원 합계: <span id="totalCntText">0</span>명
+            </div>
+        </fieldset>
         <br/>
         
-        <button onclick="calc();" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">결과 계산 및 복사</button><br/><br/>
-        
-        <p id="result" name="result" style="background-color: #f9f9f9; padding: 10px; border: 1px solid #ddd; display: inline-block; min-width: 320px; font-family: monospace;"></p>
-    </body>
-</html>
+        <button onclick="calc();" style="padding: 8px 20px; font-weight: bold; cursor: pointer; background-color: #f0
