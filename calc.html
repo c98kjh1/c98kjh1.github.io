@@ -1,6 +1,57 @@
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+        <style>
+            /* 풍선도움말(Tooltip) 스타일 설정 */
+            .tooltip {
+                position: relative;
+                display: inline-block;
+                cursor: help;
+                color: #007bff;
+                font-weight: bold;
+                margin-left: 5px;
+                font-size: 0.9em;
+            }
+
+            /* 마우스 오버 시 나타날 말풍선 기본 디자인 */
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 200px;
+                background-color: #333;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 6px 10px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%; /* 아이콘 위쪽에 배치 */
+                left: 50%;
+                margin-left: -100px;
+                opacity: 0;
+                transition: opacity 0.2s;
+                font-size: 0.85em;
+                font-weight: normal;
+                line-height: 1.3;
+            }
+
+            /* 말풍선 아래쪽 화살표 모양 */
+            .tooltip .tooltiptext::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #333 transparent transparent transparent;
+            }
+
+            /* 마우스 올리면 보이게 처리 */
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+        </style>
         <script>
             // 입력값에서 콤마를 제거하고 숫자로 변환하는 공통 함수
             function getNumberFromInput(id) {
@@ -77,22 +128,18 @@
 
             // 입력할 때마다 실시간으로 수치들을 업데이트하는 함수
             function updateSummary(inputId) {
-                // 금액 입력창일 경우 실시간으로 콤마 포맷팅 적용
                 if (inputId === 'totalPayAmt' || inputId === 'alcoholAmt') {
                     formatInputWithComma(inputId);
                 }
 
-                // 콤마 제거 후 숫자 가져오기
                 var totalPayAmt = getNumberFromInput("totalPayAmt");
                 var alcoholAmt = getNumberFromInput("alcoholAmt");
                 var alcoholCnt = getNumberFromInput("alcoholCnt");
                 var nonAlcoholCnt = getNumberFromInput("nonAlcoholCnt");
 
-                // 총 금액 - 주류 금액 = 음식 금액 계산
                 var foodAmt = totalPayAmt - alcoholAmt;
                 if (foodAmt < 0) foodAmt = 0;
 
-                // 실시간 화면 표시
                 document.getElementById("calculatedFoodAmtText").innerText = foodAmt.toLocaleString();
                 document.getElementById("totalAmtText").innerText = totalPayAmt.toLocaleString();
                 document.getElementById("totalCntText").innerText = (alcoholCnt + nonAlcoholCnt).toLocaleString();
@@ -104,8 +151,19 @@
         
         <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px;">
             <legend><strong>1. 금액 입력</strong></legend>
-            <input id="totalPayAmt" name="totalPayAmt" value="0" oninput="updateSummary('totalPayAmt')" /> 총 금액<br/>
-            <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary('alcoholAmt')" /> 주류 금액<br/>
+            
+            <input id="totalPayAmt" name="totalPayAmt" value="0" oninput="updateSummary('totalPayAmt')" /> 총 금액
+            <div class="tooltip">?
+                <span class="tooltiptext">영수증 총금액을 입력하세요.</span>
+            </div>
+            <br/>
+            
+            <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary('alcoholAmt')" /> 주류 금액
+            <div class="tooltip">?
+                <span class="tooltiptext">영수증에서 주류금액을 입력하세요.</span>
+            </div>
+            <br/>
+            
             <div style="margin-top: 8px; color: #666; font-size: 0.9em;">
                 💡 자동 계산된 음식 금액: <span id="calculatedFoodAmtText" style="font-weight: bold; color: #000;">0</span>원
             </div>
