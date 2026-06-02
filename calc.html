@@ -1,3 +1,4 @@
+
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
@@ -10,19 +11,16 @@
                 var alcoholCnt = Number(document.getElementById("alcoholCnt").value); // 주류 인원
                 var nonAlcoholCnt = Number(document.getElementById("nonAlcoholCnt").value); // 비주류 인원
 
-                // 2. 총 인원 자동 계산
+                // 총 인원 및 총 사용금액 계산
                 var totalCnt = alcoholCnt + nonAlcoholCnt;
-                document.getElementById("totalCntText").innerText = totalCnt;
+                var totalPayAmt = foodAmt + alcoholAmt;
 
                 if (totalCnt === 0) {
                     alert("인원을 입력해주세요.");
                     return;
                 }
 
-                // 총 사용 금액
-                var totalPayAmt = foodAmt + alcoholAmt;
-
-                // 3 & 4. 1인당 정산 금액 계산 (천원 단위 올림)
+                // 1인당 정산 금액 계산 (천원 단위 올림)
                 // 비주류 1인당 금액 = 음식금액 / 총인원
                 var nonAlcoholPerAmt = Math.ceil((foodAmt / totalCnt) / 1000) * 1000;
                 
@@ -58,25 +56,37 @@
                 navigator.clipboard.writeText(result);
             }
 
-            // 인원 입력 시 총 인원을 실시간으로 보여주는 함수
-            function updateTotalCnt() {
+            // 입력할 때마다 실시간으로 총금액과 총인원을 업데이트하는 함수
+            function updateSummary() {
+                var foodAmt = Number(document.getElementById("foodAmt").value) || 0;
+                var alcoholAmt = Number(document.getElementById("alcoholAmt").value) || 0;
                 var alcoholCnt = Number(document.getElementById("alcoholCnt").value) || 0;
                 var nonAlcoholCnt = Number(document.getElementById("nonAlcoholCnt").value) || 0;
+
+                // 실시간 화면 표시
+                document.getElementById("totalAmtText").innerText = (foodAmt + alcoholAmt).toLocaleString();
                 document.getElementById("totalCntText").innerText = alcoholCnt + nonAlcoholCnt;
             }
         </script>
     </head>
     <body>
         <h3>회비 정산 계산기</h3>
-        <input id="foodAmt" name="foodAmt" value="0" /> 음식 금액<br/>
-        <input id="alcoholAmt" name="alcoholAmt" value="0" /> 주류 금액<br/>
+        <input id="foodAmt" name="foodAmt" value="0" oninput="updateSummary()" /> 음식 금액<br/>
+        <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary()" /> 주류 금액<br/>
         <hr/>
-        <input id="alcoholCnt" name="alcoholCnt" value="0" oninput="updateTotalCnt()" /> 주류 인원 (음식+주류 대상)<br/>
-        <input id="nonAlcoholCnt" name="nonAlcoholCnt" value="0" oninput="updateTotalCnt()" /> 비주류 인원 (음식만 대상)<br/>
-        <strong>총 인원: <span id="totalCntText">0</span>명</strong><br/>
+        <input id="alcoholCnt" name="alcoholCnt" value="0" oninput="updateSummary()" /> 주류 인원 (음식+주류 대상)<br/>
+        <input id="nonAlcoholCnt" name="nonAlcoholCnt" value="0" oninput="updateSummary()" /> 비주류 인원 (음식만 대상)<br/>
         <hr/>
-        <button onclick="calc();" style="padding: 5px 15px; margin-top: 10px;">결과 계산 및 복사</button><br/><br/>
         
-        <p id="result" name="result" style="background-color: #f9f9f9; padding: 10px; border: 1px solid #ddd; display: inline-block; min-width: 300px;"></p>
+        <div style="background-color: #f0f7ff; padding: 10px; border-left: 4px solid #007bff; margin-bottom: 10px; display: inline-block; min-width: 250px;">
+            <strong>[실시간 합계]</strong><br/>
+            - 총 사용 금액: <span id="totalAmtText">0</span>원<br/>
+            - 총 인원: <span id="totalCntText">0</span>명
+        </div>
+        <br/>
+        
+        <button onclick="calc();" style="padding: 5px 15px; font-weight: bold; cursor: pointer;">결과 계산 및 복사</button><br/><br/>
+        
+        <p id="result" name="result" style="background-color: #f9f9f9; padding: 10px; border: 1px solid #ddd; display: inline-block; min-width: 320px; font-family: monospace;"></p>
     </body>
 </html>
