@@ -5,11 +5,10 @@
             // 입력값에서 콤마를 제거하고 숫자로 변환하는 공통 함수
             function getNumberFromInput(id) {
                 var value = document.getElementById(id).value;
-                // 모든 콤마(,)를 제거한 후 숫자로 변환 (빈 값은 0)
                 return Number(value.replace(/,/g, '')) || 0;
             }
 
-            // 숫자에 콤마를 추가하는 함수 (input 포커스 유지용)
+            // 숫자에 콤마를 추가하는 함수
             function formatInputWithComma(id) {
                 var input = document.getElementById(id);
                 var num = Number(input.value.replace(/,/g, '')) || 0;
@@ -22,15 +21,18 @@
 
             function calc() {
                 // 콤마 제거 후 숫자 가져오기
-                var foodAmt = getNumberFromInput("foodAmt"); // 음식 금액
+                var totalPayAmt = getNumberFromInput("totalPayAmt"); // 총 금액
                 var alcoholAmt = getNumberFromInput("alcoholAmt"); // 주류 금액
                 
+                // 총 금액에서 주류 금액을 뺀 값을 음식 금액으로 정의
+                var foodAmt = totalPayAmt - alcoholAmt; 
+                if (foodAmt < 0) foodAmt = 0; // 음수 방지
+
                 var alcoholCnt = getNumberFromInput("alcoholCnt"); // 주류 인원
                 var nonAlcoholCnt = getNumberFromInput("nonAlcoholCnt"); // 비주류 인원
 
-                // 총 인원 및 총 사용금액 계산
+                // 총 인원 계산
                 var totalCnt = alcoholCnt + nonAlcoholCnt;
-                var totalPayAmt = foodAmt + alcoholAmt;
 
                 if (totalCnt === 0) {
                     alert("인원을 입력해주세요.");
@@ -61,9 +63,9 @@
                 result += "▶ 총 걷은 금액 : " + totalInAmt.toLocaleString() + "원\n\n";
 
                 result += "■ 사용 금액 :\n";
-                result += "- 음식 금액 : " + foodAmt.toLocaleString() + "원\n";
-                result += "- 주류 금액 : " + alcoholAmt.toLocaleString() + "원\n";
-                result += "▶ 총 지출 금액 : " + totalPayAmt.toLocaleString() + "원\n\n";
+                result += "- 총 지출 금액 : " + totalPayAmt.toLocaleString() + "원\n";
+                result += "  └ 음식 금액 (자동계산) : " + foodAmt.toLocaleString() + "원\n";
+                result += "  └ 주류 금액 : " + alcoholAmt.toLocaleString() + "원\n\n";
 
                 result += "■ 남은 금액 (잔액) :\n";
                 result += remainAmt.toLocaleString() + "원 (천원단위 올림으로 인한 낙전)";
@@ -73,21 +75,26 @@
                 navigator.clipboard.writeText(result);
             }
 
-            // 입력할 때마다 실시간으로 총금액과 총인원을 업데이트하는 함수
+            // 입력할 때마다 실시간으로 수치들을 업데이트하는 함수
             function updateSummary(inputId) {
                 // 금액 입력창일 경우 실시간으로 콤마 포맷팅 적용
-                if (inputId === 'foodAmt' || inputId === 'alcoholAmt') {
+                if (inputId === 'totalPayAmt' || inputId === 'alcoholAmt') {
                     formatInputWithComma(inputId);
                 }
 
-                // 콤마 제거 후 숫자 계산
-                var foodAmt = getNumberFromInput("foodAmt");
+                // 콤마 제거 후 숫자 가져오기
+                var totalPayAmt = getNumberFromInput("totalPayAmt");
                 var alcoholAmt = getNumberFromInput("alcoholAmt");
                 var alcoholCnt = getNumberFromInput("alcoholCnt");
                 var nonAlcoholCnt = getNumberFromInput("nonAlcoholCnt");
 
+                // 총 금액 - 주류 금액 = 음식 금액 계산
+                var foodAmt = totalPayAmt - alcoholAmt;
+                if (foodAmt < 0) foodAmt = 0;
+
                 // 실시간 화면 표시
-                document.getElementById("totalAmtText").innerText = (foodAmt + alcoholAmt).toLocaleString();
+                document.getElementById("calculatedFoodAmtText").innerText = foodAmt.toLocaleString();
+                document.getElementById("totalAmtText").innerText = totalPayAmt.toLocaleString();
                 document.getElementById("totalCntText").innerText = (alcoholCnt + nonAlcoholCnt).toLocaleString();
             }
         </script>
@@ -95,17 +102,20 @@
     <body>
         <h3>회비 정산 계산기</h3>
         
-        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 320px;">
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px;">
             <legend><strong>1. 금액 입력</strong></legend>
-            <input id="foodAmt" name="foodAmt" value="0" oninput="updateSummary('foodAmt')" /> 음식 금액<br/>
+            <input id="totalPayAmt" name="totalPayAmt" value="0" oninput="updateSummary('totalPayAmt')" /> 총 금액<br/>
             <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary('alcoholAmt')" /> 주류 금액<br/>
-            <div style="margin-top: 8px; color: #0056b3; font-weight: bold;">
-                💰 입력 금액 합계: <span id="totalAmtText">0</span>원
+            <div style="margin-top: 8px; color: #666; font-size: 0.9em;">
+                💡 자동 계산된 음식 금액: <span id="calculatedFoodAmtText" style="font-weight: bold; color: #000;">0</span>원
+            </div>
+            <div style="margin-top: 4px; color: #0056b3; font-weight: bold;">
+                💰 입력 금액 합계(총액): <span id="totalAmtText">0</span>원
             </div>
         </fieldset>
         <br/>
 
-        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 320px;">
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px;">
             <legend><strong>2. 인원 입력</strong></legend>
             <input id="alcoholCnt" name="alcoholCnt" value="0" oninput="updateSummary('alcoholCnt')" /> 주류 인원 (음식+주류 대상)<br/>
             <input id="nonAlcoholCnt" name="nonAlcoholCnt" value="0" oninput="updateSummary('nonAlcoholCnt')" /> 비주류 인원 (음식만 대상)<br/>
@@ -118,6 +128,6 @@
         <button onclick="calc();" style="padding: 8px 20px; font-weight: bold; cursor: pointer; background-color: #f0f0f0; border: 1px solid #aaa; border-radius: 4px;">결과 계산 및 복사</button>
         <br/><br/>
         
-        <p id="result" name="result" style="background-color: #f9f9f9; padding: 12px; border: 1px solid #ddd; display: inline-block; min-width: 320px; font-family: monospace; line-height: 1.5;"></p>
+        <p id="result" name="result" style="background-color: #f9f9f9; padding: 12px; border: 1px solid #ddd; display: inline-block; min-width: 340px; font-family: monospace; line-height: 1.5;"></p>
     </body>
 </html>
