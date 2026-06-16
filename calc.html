@@ -118,8 +118,8 @@
                 result += "  └ 음식 금액 : " + foodAmt.toLocaleString() + "원\n";
                 result += "  └ 주류 금액 : " + alcoholAmt.toLocaleString() + "원\n\n";
 
-                result += "■ 남은 금액 (잔액) :\n";
-                result += remainAmt.toLocaleString() + "원 (천원단위 올림으로 인한 낙전)";
+                result += "■ 남은 금액 :\n";
+                result += remainAmt.toLocaleString() + "원";
 
                 // 화면 표시 및 클립보드 복사
                 document.getElementById('result').innerHTML = result.replace(/\n/g, '<br/>');
