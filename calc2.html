@@ -1,0 +1,305 @@
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+        <style>
+            body { font-family: sans-serif; padding: 10px; max-width: 600px; }
+            h3 { margin-bottom: 15px; }
+            fieldset { margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px; }
+            legend { font-weight: bold; }
+            
+            /* 차수 구역 디자인 */
+            .round-box { border-bottom: 1px dashed #ccc; padding-bottom: 10px; margin-bottom: 10px; }
+            .round-box:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+            .round-title { font-weight: bold; color: #007bff; margin-bottom: 5px; display: flex; justify-content: space-between; }
+            
+            /* 풍선도움말(Tooltip) 스타일 설정 */
+            .tooltip {
+                position: relative;
+                display: inline-block;
+                cursor: help;
+                color: #007bff;
+                font-weight: bold;
+                margin-left: 5px;
+                font-size: 0.9em;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 200px;
+                background-color: #333;
+                color: #fff;
+                text-align: center;
+                border-radius: 6px;
+                padding: 6px 10px;
+                position: absolute;
+                z-index: 1;
+                bottom: 125%;
+                left: 50%;
+                margin-left: -100px;
+                opacity: 0;
+                transition: opacity 0.2s;
+                font-size: 0.85em;
+                font-weight: normal;
+                line-height: 1.3;
+            }
+            .tooltip .tooltiptext::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: #333 transparent transparent transparent;
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
+
+            /* 동적 주류 항목 스타일 */
+            .alcohol-item { margin-top: 4px; }
+            .alcohol-item input[type="text"] { width: 70px; margin-right: 3px; }
+            
+            .btn-add { background-color: #28a745; color: white; border: none; padding: 3px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; margin-top: 3px; }
+            .btn-del { background-color: #dc3545; color: white; border: none; padding: 1px 5px; border-radius: 3px; cursor: pointer; font-size: 0.75em; }
+            .btn-round { background-color: #007bff; color: white; border: 1px solid #0069d9; padding: 6px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-bottom: 10px; }
+            .btn-round-del { background-color: #6c757d; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 0.8em; }
+        </style>
+        <script>
+            // 입력값에서 콤마를 제거하고 숫자로 변환하는 공통 함수
+            function getNumberFromInput(element) {
+                if (!element) return 0;
+                return Number(element.value.replace(/,/g, '')) || 0;
+            }
+
+            // 숫자에 콤마를 추가하는 함수
+            function formatInputWithComma(element) {
+                if (!element) return;
+                var num = Number(element.value.replace(/,/g, '')) || 0;
+                element.value = num === 0 ? "0" : num.toLocaleString();
+            }
+
+            // 특정 차수의 모든 주류 금액 더하기
+            function getRoundAlcoholAmt(roundBox) {
+                var items = roundBox.getElementsByClassName("alcohol-item");
+                var total = 0;
+                for (var i = 0; i < items.length; i++) {
+                    var amtInput = items[i].getElementsByClassName("alc-amt")[0];
+                    total += getNumberFromInput(amtInput);
+                }
+                return total;
+            }
+
+            // 차수(Round) 추가 함수
+            function addRound() {
+                var wrapper = document.getElementById("roundWrapper");
+                var nextNum = wrapper.getElementsByClassName("round-box").length + 1;
+
+                var div = document.createElement("div");
+                div.className = "round-box";
+                
+                div.innerHTML = `
+                    <div class="round-title">
+                        <span>📍 ${nextNum}차 설정</span>
+                        ${nextNum > 1 ? '<button type="button" class="btn-round-del" onclick="removeRound(this)">차수 삭제</button>' : ''}
+                    </div>
+                    <input class="totalPayAmt" value="0" oninput="formatInputWithComma(this); updateSummary();" /> 총 금액
+                    <div class="tooltip">?
+                        <span class="tooltiptext">해당 차수의 영수증 총금액을 입력하세요.</span>
+                    </div>
+                    <br/>
+                    
+                    <div class="alcoholWrapper" style="margin: 5px 0 3px 10px; padding-left: 5px; border-left: 2px solid #ddd;">
+                        <div class="alcohol-item">
+                            <input type="text" class="alc-name" value="주류1" />
+                            <input type="text" class="alc-amt" value="0" oninput="formatInputWithComma(this); updateSummary();" /> 원
+                        </div>
+                    </div>
+                    <button type="button" class="btn-add" style="margin-left:10px; margin-bottom:8px;" onclick="addAlcoholInput(this)">+ 주류 추가</button>
+                    <br/>
+                    
+                    <input class="alcoholCnt" value="0" oninput="formatInputWithComma(this); updateSummary();" /> 주류 인원 (음식+주류 대상)<br/>
+                    <input class="nonAlcoholCnt" value="0" oninput="formatInputWithComma(this); updateSummary();" /> 비주류 인원 (음식만 대상)
+                `;
+                wrapper.appendChild(div);
+                updateSummary();
+            }
+
+            // 차수 삭제 함수
+            function removeRound(btn) {
+                btn.closest(".round-box").remove();
+                var titles = document.querySelectorAll(".round-title span");
+                titles.forEach(function(title, idx) {
+                    title.innerText = "📍 " + (idx + 1) + "차 설정";
+                });
+                updateSummary();
+            }
+
+            // 주류 입력칸 추가 함수
+            function addAlcoholInput(btn) {
+                var wrapper = btn.parentElement.querySelector(".alcoholWrapper");
+                var nextNumber = wrapper.getElementsByClassName("alcohol-item").length + 1;
+
+                var div = document.createElement("div");
+                div.className = "alcohol-item";
+                
+                div.innerHTML = `
+                    <input type="text" class="alc-name" value="주류${nextNumber}" />
+                    <input type="text" class="alc-amt" value="0" oninput="formatInputWithComma(this); updateSummary();" /> 원
+                    <button type="button" class="btn-del" onclick="removeAlcoholInput(this)">삭제</button>
+                `;
+                wrapper.appendChild(div);
+                updateSummary();
+            }
+
+            // 주류 입력칸 삭제 및 정렬
+            function removeAlcoholInput(btn) {
+                var wrapper = btn.closest(".alcoholWrapper");
+                btn.parentElement.remove();
+                
+                var items = wrapper.getElementsByClassName("alcohol-item");
+                for (var i = 0; i < items.length; i++) {
+                    var nameInput = items[i].getElementsByClassName("alc-name")[0];
+                    if (nameInput.value.startsWith("주류")) {
+                        nameInput.value = "주류" + (i + 1);
+                    }
+                }
+                updateSummary();
+            }
+
+            function calc() {
+                var rounds = document.querySelectorAll(".round-box");
+                var result = "";
+                
+                var totalPayAmtSum = 0; // 전차수 총 지출액 누적
+                var totalInAmtSum = 0;  // 전차수 총 수거액 누적
+
+                for (var i = 0; i < rounds.length; i++) {
+                    var roundBox = rounds[i];
+                    var roundNum = i + 1;
+                    
+                    var rTotalPayAmt = getNumberFromInput(roundBox.querySelector(".totalPayAmt"));
+                    var rAlcoholAmt = getRoundAlcoholAmt(roundBox);
+                    var rFoodAmt = rTotalPayAmt - rAlcoholAmt;
+                    if (rFoodAmt < 0) rFoodAmt = 0;
+
+                    var rAlcoholCnt = getNumberFromInput(roundBox.querySelector(".alcoholCnt"));
+                    var rNonAlcoholCnt = getNumberFromInput(roundBox.querySelector(".nonAlcoholCnt"));
+                    var rTotalCnt = rAlcoholCnt + rNonAlcoholCnt;
+
+                    if (rTotalPayAmt > 0 && rTotalCnt === 0) {
+                        alert(roundNum + "차의 인원을 입력해주세요.");
+                        return;
+                    }
+
+                    // 차수별 1인당 금액 계산 (천원 단위 올림)
+                    var rNonAlcoholPerAmt = Math.ceil((rFoodAmt / rTotalCnt) / 1000) * 1000;
+                    var rAlcoholPerAmt = 0;
+                    if (rAlcoholCnt > 0) {
+                        rAlcoholPerAmt = Math.ceil(((rFoodAmt / rTotalCnt) + (rAlcoholAmt / rAlcoholCnt)) / 1000) * 1000;
+                    }
+
+                    // 차수별 수거 및 정산액 계산
+                    var rAlcoholInAmt = rAlcoholPerAmt * rAlcoholCnt;
+                    var rNonAlcoholInAmt = rNonAlcoholPerAmt * rNonAlcoholCnt;
+                    var rTotalInAmt = rAlcoholInAmt + rNonAlcoholInAmt;
+                    var rRemainAmt = rTotalInAmt - rTotalPayAmt;
+
+                    // 누적합산 처리
+                    totalPayAmtSum += rTotalPayAmt;
+                    totalInAmtSum += rTotalInAmt;
+
+                    // 기존 포맷 양식을 차수별로 생성
+                    result += "【 " + roundNum + "차 정산 결과 】\n";
+                    result += "■ 걷은 금액 :\n";
+                    result += "- 주류 : (" + rAlcoholPerAmt.toLocaleString() + "원) X (" + rAlcoholCnt + "명) = " + rAlcoholInAmt.toLocaleString() + "원\n";
+                    result += "- 비주류 : (" + rNonAlcoholPerAmt.toLocaleString() + "원) X (" + rNonAlcoholCnt + "명) = " + rNonAlcoholInAmt.toLocaleString() + "원\n";
+                    result += "▶ 총 걷은 금액 : " + rTotalInAmt.toLocaleString() + "원\n\n";
+
+                    result += "■ 사용 금액 :\n";
+                    result += "- 총 지출 금액 : " + rTotalPayAmt.toLocaleString() + "원\n";
+                    result += "  └ 음식 금액 : " + rFoodAmt.toLocaleString() + "원\n";
+                    result += "  └ 주류 금액 : " + rAlcoholAmt.toLocaleString() + "원\n\n";
+
+                    result += "■ 남은 금액 : " + rRemainAmt.toLocaleString() + "원\n";
+                    result += "-----------------------------------------\n\n";
+                }
+
+                // 모든 차수가 끝난 후 최종 요약 정보 추가
+                var finalRemainAmt = totalInAmtSum - totalPayAmtSum;
+                result += "■ [최종 통합 정산 합계]\n";
+                result += "- 전체 지출 총액 : " + totalPayAmtSum.toLocaleString() + "원\n";
+                result += "- 전체 수거 총액 : " + totalInAmtSum.toLocaleString() + "원\n";
+                result += "▶ 최종 남은 총 잔액 : " + finalRemainAmt.toLocaleString() + "원";
+
+                // 화면 표시 및 클립보드 복사
+                document.getElementById('result').innerHTML = result.replace(/\n/g, '<br/>');
+                navigator.clipboard.writeText(result);
+            }
+
+            // 실시간 상단 대시보드 요약 처리
+            function updateSummary() {
+                var rounds = document.querySelectorAll(".round-box");
+                var totalPaySum = 0;
+                var foodAmtSum = 0;
+                var totalCntSum = 0;
+
+                for (var i = 0; i < rounds.length; i++) {
+                    var roundBox = rounds[i];
+                    var rTotalPayAmt = getNumberFromInput(roundBox.querySelector(".totalPayAmt"));
+                    var rAlcoholAmt = getRoundAlcoholAmt(roundBox);
+                    var rFoodAmt = rTotalPayAmt - rAlcoholAmt;
+                    if (rFoodAmt < 0) rFoodAmt = 0;
+
+                    var rAlcoholCnt = getNumberFromInput(roundBox.querySelector(".alcoholCnt"));
+                    var rNonAlcoholCnt = getNumberFromInput(roundBox.querySelector(".nonAlcoholCnt"));
+
+                    totalPaySum += rTotalPayAmt;
+                    foodAmtSum += rFoodAmt;
+                    totalCntSum += (rAlcoholCnt + rNonAlcoholCnt);
+                }
+
+                document.getElementById("calculatedFoodAmtText").innerText = foodAmtSum.toLocaleString();
+                document.getElementById("totalAmtText").innerText = totalPaySum.toLocaleString();
+                document.getElementById("totalCntText").innerText = totalCntSum.toLocaleString();
+            }
+
+            window.onload = function() {
+                addRound(); // 초기 1차 기본 생성
+            };
+        </script>
+    </head>
+    <body>
+        <h3>회비 정산 계산기 (N차 통합형)</h3>
+        
+        <button type="button" class="btn-round" onclick="addRound()">+ 다음 차수(2차/3차...) 추가</button>
+        <br/>
+
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px;">
+            <legend><strong>1. 차수별 내역 입력</strong></legend>
+            <div id="roundWrapper">
+                <!-- 동적으로 차수가 쌓이는 구간 -->
+            </div>
+        </fieldset>
+        <br/>
+
+        <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px; background-color: #f9f9f9;">
+            <legend><strong>2. 전체 실시간 합계 현황</strong></legend>
+            <div style="color: #666; font-size: 0.9em;">
+                💡 자동 계산된 총 음식 금액: <span id="calculatedFoodAmtText" style="font-weight: bold; color: #000;">0</span>원
+            </div>
+            <div style="margin-top: 4px; color: #0056b3; font-weight: bold;">
+                💰 입력 금액 합계(총액): <span id="totalAmtText">0</span>원
+            </div>
+            <div style="margin-top: 4px; color: #28a745; font-weight: bold;">
+                👥 총 인원 합계: <span id="totalCntText">0</span>명
+            </div>
+        </fieldset>
+        <br/>
+                
+        <button onclick="calc();" style="padding: 8px 20px; font-weight: bold; cursor: pointer; background-color: #f0f0f0; border: 1px solid #aaa; border-radius: 4px;">결과 계산 및 복사</button>
+        <br/><br/>
+                
+        <p id="result" name="result" style="padding: 12px; border: 1px solid #ddd; display: inline-block; min-width: 340px; font-family: monospace; line-height: 1.5;"></p>
+    </body>
+</html>
