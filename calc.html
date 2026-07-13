@@ -12,7 +12,6 @@
                 margin-left: 5px;
                 font-size: 0.9em;
             }
-
             /* 마우스 오버 시 나타날 말풍선 기본 디자인 */
             .tooltip .tooltiptext {
                 visibility: hidden;
@@ -33,7 +32,6 @@
                 font-weight: normal;
                 line-height: 1.3;
             }
-
             /* 말풍선 아래쪽 화살표 모양 */
             .tooltip .tooltiptext::after {
                 content: "";
@@ -45,36 +43,124 @@
                 border-style: solid;
                 border-color: #333 transparent transparent transparent;
             }
-
             /* 마우스 올리면 보이게 처리 */
             .tooltip:hover .tooltiptext {
                 visibility: visible;
                 opacity: 1;
             }
+            /* 주류 항목 스타일 */
+            .alcohol-item {
+                margin-top: 5px;
+            }
+            .alcohol-item input[type="text"] {
+                width: 80px;
+                margin-right: 5px;
+            }
+            .btn-del {
+                background-color: #dc3545;
+                color: white;
+                border: none;
+                padding: 2px 6px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 0.8em;
+            }
+            .btn-add {
+                background-color: #28a745;
+                color: white;
+                border: none;
+                padding: 4px 10px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 0.85em;
+                margin-top: 5px;
+            }
         </style>
         <script>
             // 입력값에서 콤마를 제거하고 숫자로 변환하는 공통 함수
             function getNumberFromInput(id) {
-                var value = document.getElementById(id).value;
+                var element = document.getElementById(id);
+                if (!element) return 0;
+                var value = element.value;
                 return Number(value.replace(/,/g, '')) || 0;
             }
 
-            // 숫자에 콤마를 추가하는 함수
-            function formatInputWithComma(id) {
-                var input = document.getElementById(id);
-                var num = Number(input.value.replace(/,/g, '')) || 0;
+            // 숫자에 콤마를 추가하는 함수 (요소 직접 전달 가능하도록 수정)
+            function formatInputWithComma(element) {
+                if (typeof element === 'string') {
+                    element = document.getElementById(element);
+                }
+                if (!element) return;
+                var num = Number(element.value.replace(/,/g, '')) || 0;
                 if (num === 0) {
-                    input.value = "0";
+                    element.value = "0";
                 } else {
-                    input.value = num.toLocaleString();
+                    element.value = num.toLocaleString();
                 }
             }
 
-            function calc() {
-                // 콤마 제거 후 숫자 가져오기
-                var totalPayAmt = getNumberFromInput("totalPayAmt"); // 총 금액
-                var alcoholAmt = getNumberFromInput("alcoholAmt"); // 주류 금액
+            // 모든 주류 금액을 더하고 상세 내역 배열을 반환하는 함수
+            function getAlcoholData() {
+                var wrapper = document.getElementById("alcoholWrapper");
+                var items = wrapper.getElementsByClassName("alcohol-item");
+                var totalAlcoholAmt = 0;
+                var list = [];
+
+                for (var i = 0; i < items.length; i++) {
+                    var nameInput = items[i].getElementsByClassName("alc-name")[0];
+                    var amtInput = items[i].getElementsByClassName("alc-amt")[0];
+                    
+                    var name = nameInput.value.trim() || ("주류" + (i + 1));
+                    var amt = Number(amtInput.value.replace(/,/g, '')) || 0;
+                    
+                    totalAlcoholAmt += amt;
+                    if (amt > 0) {
+                        list.push({ name: name, amt: amt });
+                    }
+                }
+                return { total: totalAlcoholAmt, list: list };
+            }
+
+            // 주류 입력칸 추가 함수
+            function addAlcoholInput() {
+                var wrapper = document.getElementById("alcoholWrapper");
+                var currentCount = wrapper.getElementsByClassName("alcohol-item").length;
+                var nextNumber = currentCount + 1; // 다음 주류 번호 계산
+
+                var div = document.createElement("div");
+                div.className = "alcohol-item";
+                div.innerHTML = `
+                    <input type="text" class="alc-name" value="주류${nextNumber}" oninput="updateSummary()" />
+                    <input type="text" class="alc-amt" value="0" oninput="updateSummary(this)" /> 원
+                    <button type="button" class="btn-del" onclick="removeAlcoholInput(this)">삭제</button>
+                `;
+                wrapper.appendChild(div);
+                updateSummary();
+            }
+
+            // 주류 입력칸 삭제 함수 및 이름 번호 재정렬
+            function removeAlcoholInput(btn) {
+                btn.parentElement.remove();
                 
+                // 삭제 후 남아있는 주류들의 번호를 주류1, 주류2 순서대로 다시 자동 정렬합니다.
+                var wrapper = document.getElementById("alcoholWrapper");
+                var items = wrapper.getElementsByClassName("alcohol-item");
+                for (var i = 0; i < items.length; i++) {
+                    var nameInput = items[i].getElementsByClassName("alc-name")[0];
+                    // 사용자가 직접 이름을 수정한 경우는 건드리지 않고, 기본값 양식인 경우만 정렬
+                    if (nameInput.value.startsWith("주류")) {
+                        nameInput.value = "주류" + (i + 1);
+                    }
+                }
+                
+                updateSummary();
+            }
+
+            function calc() {
+                var totalPayAmt = getNumberFromInput("totalPayAmt"); // 총 금액
+                var alcoholData = getAlcoholData();
+                var alcoholAmt = alcoholData.total; // 총 주류 금액
+                                
                 // 총 금액에서 주류 금액을 뺀 값을 음식 금액으로 정의
                 var foodAmt = totalPayAmt - alcoholAmt; 
                 if (foodAmt < 0) foodAmt = 0; // 음수 방지
@@ -93,7 +179,7 @@
                 // 1인당 정산 금액 계산 (천원 단위 올림)
                 // 비주류 1인당 금액 = 음식금액 / 총인원
                 var nonAlcoholPerAmt = Math.ceil((foodAmt / totalCnt) / 1000) * 1000;
-                
+                                
                 // 주류 1인당 금액 = (음식금액 / 총인원) + (주류금액 / 주류인원)
                 var alcoholPerAmt = 0;
                 if (alcoholCnt > 0) {
@@ -102,7 +188,7 @@
 
                 // 실제 총 걷히는 금액
                 var totalInAmt = (alcoholPerAmt * alcoholCnt) + (nonAlcoholPerAmt * nonAlcoholCnt);
-                
+                                
                 // 남는 금액 (잔액)
                 var remainAmt = totalInAmt - totalPayAmt;
 
@@ -116,7 +202,15 @@
                 result += "■ 사용 금액 :\n";
                 result += "- 총 지출 금액 : " + totalPayAmt.toLocaleString() + "원\n";
                 result += "  └ 음식 금액 : " + foodAmt.toLocaleString() + "원\n";
-                result += "  └ 주류 금액 : " + alcoholAmt.toLocaleString() + "원\n\n";
+                result += "  └ 총 주류 금액 : " + alcoholAmt.toLocaleString() + "원\n";
+                
+                // 주류 상세 내역이 있으면 추가 표시
+                if (alcoholData.list.length > 0) {
+                    alcoholData.list.forEach(function(item) {
+                        result += "    · " + item.name + " : " + item.amt.toLocaleString() + "원\n";
+                    });
+                }
+                result += "\n";
 
                 result += "■ 남은 금액 : ";
                 result += remainAmt.toLocaleString() + "원";
@@ -127,13 +221,22 @@
             }
 
             // 입력할 때마다 실시간으로 수치들을 업데이트하는 함수
-            function updateSummary(inputId) {
-                if (inputId === 'totalPayAmt' || inputId === 'alcoholAmt') {
-                    formatInputWithComma(inputId);
+            function updateSummary(targetElement) {
+                // 특정 필드에 입력이 들어왔을 때 콤마 포맷팅 처리
+                if (targetElement) {
+                    if (typeof targetElement === 'string') {
+                        formatInputWithComma(targetElement);
+                    } else {
+                        formatInputWithComma(targetElement);
+                    }
+                } else {
+                    // 전체 금액 필드는 기본적으로 포맷팅 확인
+                    formatInputWithComma("totalPayAmt");
                 }
 
                 var totalPayAmt = getNumberFromInput("totalPayAmt");
-                var alcoholAmt = getNumberFromInput("alcoholAmt");
+                var alcoholData = getAlcoholData();
+                var alcoholAmt = alcoholData.total;
                 var alcoholCnt = getNumberFromInput("alcoholCnt");
                 var nonAlcoholCnt = getNumberFromInput("nonAlcoholCnt");
 
@@ -148,23 +251,28 @@
     </head>
     <body>
         <h3>회비 정산 계산기</h3>
-        
+                
         <fieldset style="margin-bottom: 15px; border: 1px solid #ccc; padding: 10px; display: inline-block; min-width: 340px;">
             <legend><strong>1. 금액 입력</strong></legend>
-            
-            <input id="totalPayAmt" name="totalPayAmt" value="0" oninput="updateSummary('totalPayAmt')" /> 총 금액
+                        
+            <input id="totalPayAmt" name="totalPayAmt" value="0" oninput="updateSummary('totalPayAmt')" /> 총 금액(영수증)
             <div class="tooltip">?
                 <span class="tooltiptext">영수증 총금액을 입력하세요.</span>
             </div>
             <br/>
-            
-            <input id="alcoholAmt" name="alcoholAmt" value="0" oninput="updateSummary('alcoholAmt')" /> 주류 금액
-            <div class="tooltip">?
-                <span class="tooltiptext">영수증에서 주류금액을 입력하세요.</span>
+                        
+            <!-- 주류 금액 동적 입력 영역 -->
+            <div style="margin-top: 10px; margin-bottom: 5px; font-weight: bold; color: #555;">주류별 금액</div>
+            <div id="alcoholWrapper">
+                <div class="alcohol-item">
+                    <input type="text" class="alc-name" value="주류1" oninput="updateSummary()" />
+                    <input type="text" class="alc-amt" value="0" oninput="updateSummary(this)" /> 원
+                </div>
             </div>
+            <button type="button" class="btn-add" onclick="addAlcoholInput()">+ 주류 추가</button>
             <br/>
-            
-            <div style="margin-top: 8px; color: #666; font-size: 0.9em;">
+                        
+            <div style="margin-top: 12px; color: #666; font-size: 0.9em;">
                 💡 자동 계산된 음식 금액: <span id="calculatedFoodAmtText" style="font-weight: bold; color: #000;">0</span>원
             </div>
             <div style="margin-top: 4px; color: #0056b3; font-weight: bold;">
@@ -182,10 +290,10 @@
             </div>
         </fieldset>
         <br/>
-        
+                
         <button onclick="calc();" style="padding: 8px 20px; font-weight: bold; cursor: pointer; background-color: #f0f0f0; border: 1px solid #aaa; border-radius: 4px;">결과 계산 및 복사</button>
         <br/><br/>
-        
+                
         <p id="result" name="result" style="background-color: #f9f9f9; padding: 12px; border: 1px solid #ddd; display: inline-block; min-width: 340px; font-family: monospace; line-height: 1.5;"></p>
     </body>
 </html>
