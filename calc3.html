@@ -2,7 +2,7 @@
 <html lang="ko">
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-        <title>회비 정산 계산기 (정확한 N빵)</title>
+        <title>회비 정산 계산기 (10원 단위 N빵)</title>
         <style>
             body { font-family: sans-serif; padding: 10px; max-width: 600px; }
             h3 { margin-bottom: 15px; }
@@ -189,11 +189,11 @@
                         return;
                     }
 
-                    // [수정 포인트] 1000원 단위 올림을 제거하고 정확한 1원 단위(Math.round)로 N빵 계산
-                    var rNonAlcoholPerAmt = rTotalCnt > 0 ? Math.round(rFoodAmt / rTotalCnt) : 0;
+                    // [수정 포인트] 10원 단위 반올림 계산 (Math.round( ... / 10) * 10)
+                    var rNonAlcoholPerAmt = rTotalCnt > 0 ? Math.round((rFoodAmt / rTotalCnt) / 10) * 10 : 0;
                     var rAlcoholPerAmt = 0;
                     if (rAlcoholCnt > 0) {
-                        rAlcoholPerAmt = Math.round((rFoodAmt / rTotalCnt) + (rAlcoholAmt / rAlcoholCnt));
+                        rAlcoholPerAmt = Math.round(((rFoodAmt / rTotalCnt) + (rAlcoholAmt / rAlcoholCnt)) / 10) * 10;
                     }
 
                     var rAlcoholInAmt = rAlcoholPerAmt * rAlcoholCnt;
@@ -266,7 +266,7 @@
         </script>
     </head>
     <body>
-        <h3>회비 정산 계산기 (정확한 N빵)</h3>
+        <h3>회비 정산 계산기 (10원 단위 N빵)</h3>
         
         <button type="button" class="btn-round" onclick="addRound()">+ 다음 차수(2차/3차...) 추가</button>
         <br/>
